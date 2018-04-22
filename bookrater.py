@@ -21,13 +21,6 @@ class Query(gp.ObjectType):
         data_in = pd.DataFrame({'userID': users, 'bookID': books})
         data_in = data_in.astype({'userID': 'category', 'bookID': 'category'})
 
-        n_users = 100
-        n_books = 360
-
-        N_FACTORS = 50
-        model = EmbeddingDot(n_users, n_books, N_FACTORS)
-        #TODO: load weights
-
         data_tsr = torch.LongTensor(data_in.as_matrix())
         data_var = Variable(data_tsr, volatile=True)
 
@@ -49,5 +42,12 @@ class EmbeddingDot(nn.Module):
         u, b = self.u(users), self.b(books)
         return (u * b).sum(1)
 
+
+n_users = 100
+n_books = 360
+
+N_FACTORS = 50
+model = EmbeddingDot(n_users, n_books, N_FACTORS)
+model.load_state_dict('bookweb-embed-dot.model')
 
 schema = gp.Schema(query=Query)
