@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from collections import OrderedDict
+
+import graphene as gp
 import numpy as np
 import pandas as pd
-
 import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Variable
-
-import graphene as gp
 
 
 class Query(gp.ObjectType):
@@ -18,8 +18,7 @@ class Query(gp.ObjectType):
                                  books=gp.NonNull(gp.List(gp.Int)))
 
     def resolve_predicted_ratings(self, info, users, books):
-        data_in = pd.DataFrame({'userID': users, 'bookID': books})
-        data_in = data_in.astype({'userID': 'category', 'bookID': 'category'})
+        data_in = pd.DataFrame.from_dict(OrderedDict([('userID', users), ('bookID', books)]))
 
         data_tsr = torch.LongTensor(data_in.as_matrix())
         data_var = Variable(data_tsr, volatile=True)
@@ -48,6 +47,6 @@ n_books = 360
 
 N_FACTORS = 50
 model = EmbeddingDot(n_users, n_books, N_FACTORS)
-model.load_state_dict('bookweb-embed-dot.model')
+model.load_state_dict(torch.load('bookweb-embed-dot.model'))
 
 schema = gp.Schema(query=Query)
