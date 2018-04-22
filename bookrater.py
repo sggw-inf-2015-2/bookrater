@@ -21,8 +21,8 @@ class Query(gp.ObjectType):
         data_in = pd.DataFrame({'userID': users, 'bookID': books})
         data_in = data_in.astype({'userID': 'category', 'bookID': 'category'})
 
-        n_users = int(data_in.userID.nunique()) # TODO: hardcode
-        n_books = int(data_in.bookID.nunique()) # TODO: hardcode
+        n_users = 100
+        n_books = 360
 
         N_FACTORS = 50
         model = EmbeddingDot(n_users, n_books, N_FACTORS)
