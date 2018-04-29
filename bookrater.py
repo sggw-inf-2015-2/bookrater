@@ -9,7 +9,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.autograd import Variable
-
+from flask_graphql import GraphQLView
+from flask import Flask
 
 class Query(gp.ObjectType):
 
@@ -50,3 +51,6 @@ model = EmbeddingDot(n_users, n_books, N_FACTORS)
 model.load_state_dict(torch.load('bookweb-embed-dot.model'))
 
 schema = gp.Schema(query=Query)
+
+app = Flask(__name__)
+app.add_url_rule('/graphql', view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True))
