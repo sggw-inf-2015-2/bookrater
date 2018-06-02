@@ -9,8 +9,11 @@ flask = "*"
 graphene = "*"
 numpy = "*"
 pandas = "*"
+flask-graphql = "*"
 
 [dev-packages]
+pylint = "*"
+yapf = "*"
 
 [requires]
 python_version = "3.6"
