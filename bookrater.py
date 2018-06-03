@@ -18,8 +18,8 @@ from flask_graphql import GraphQLView
 from torch import nn
 from torch.autograd import Variable
 
-from fastai.column_data import *
-from fastai.learner import *
+from fastai.column_data import ColumnarModelData
+from fastai.learner import fit, get_cv_idxs, set_lrs, optim
 
 
 class Query(gp.ObjectType):
@@ -57,23 +57,21 @@ class Retrain(gp.Mutation):
         data = pd.DataFrame(
             (users, books, ratings), columns=('userID', 'bookID', 'rating'))
 
-        u_uniq = ratings.userID.unique()
+        u_uniq = data.userID.unique()
         user2idx = {o: i for i, o in enumerate(u_uniq)}
-        ratings.userID = ratings.userID.apply(lambda x: user2idx[x])
+        data.userID = data.userID.apply(lambda x: user2idx[x])
 
-        m_uniq = ratings.bookID.unique()
+        m_uniq = data.bookID.unique()
         book2idx = {o: i for i, o in enumerate(m_uniq)}
-        ratings.bookID = ratings.bookID.apply(lambda x: book2idx[x])
+        data.bookID = data.bookID.apply(lambda x: book2idx[x])
 
-        n_users = int(ratings.userID.nunique())
-        n_books = int(ratings.bookID.nunique())
+        n_users = int(data.userID.nunique())
+        n_books = int(data.bookID.nunique())
 
-        X = ratings.drop(['rating'], axis=1)
-        y = ratings['rating'].astype(np.float32)
+        X = data.drop(['rating'], axis=1)
+        y = data['rating'].astype(np.float32)
 
-        val_idxs = get_cv_idxs(len(ratings))
-
-
+        val_idxs = get_cv_idxs(len(data))
         model_data = ColumnarModelData.from_data_frame(
             path, val_idxs, X, y, ['userID', 'bookID'], 64)
 
