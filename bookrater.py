@@ -5,21 +5,16 @@ from os import path
 from os.path import join as pj
 
 import graphene as gp
-
 import numpy as np
 import pandas as pd
-
 import torch
 import torch.nn.functional as F
-
+from fastai.column_data import ColumnarModelData
+from fastai.learner import fit, get_cv_idxs, optim, set_lrs
 from flask import Flask
 from flask_graphql import GraphQLView
-
 from torch import nn
 from torch.autograd import Variable
-
-from fastai.column_data import ColumnarModelData
-from fastai.learner import fit, get_cv_idxs, set_lrs, optim
 
 
 class Query(gp.ObjectType):
@@ -92,6 +87,7 @@ class Retrain(gp.Mutation):
         model.save_state_dict('bookweb-embed-dot.pth')
         with open('model-params.conf', 'w') as conf_file:
             conf_file.write(f'{n_users}\n{n_books}\n')
+
         ok = True
         return Retrain(ok=ok)
 
