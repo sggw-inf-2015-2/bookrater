@@ -31,8 +31,12 @@ class Query(gp.ObjectType):
 
     def resolve_predicted_ratings(self, info, users, books):
 
+        with open('model-params.conf', 'r') as conf_file:
+            n_users = int(conf_file.readline().strip())
+            n_books = int(conf_file.readline().strip())
         N_FACTORS = 50
-        model = EmbeddingDot(len(users), len(books), N_FACTORS)
+
+        model = EmbeddingDot(n_users, n_books, N_FACTORS)
         model.load_state_dict(torch.load('bookweb-embed-dot.pth'))
 
         data_in = pd.DataFrame.from_dict(
@@ -86,6 +90,8 @@ class Retrain(gp.Mutation):
         fit(model, model_data, 20, opt, F.mse_loss)
 
         model.save_state_dict('bookweb-embed-dot.pth')
+        with open('model-params.conf', 'w') as conf_file:
+            conf_file.write(f'{n_users}\n{n_books}\n')
         ok = True
         return Retrain(ok=ok)
 
