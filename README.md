@@ -3,9 +3,9 @@ Predicts user's book ratings based on a collaborative filtering model.
 Part of [BookWeb](https://github.com/danieln96/BookWeb_SIAG)
 
 ## Installation
-Use conda or pip to install. With conda it will look like this:
+The recommended way is to use pipenv:
 ```
-conda create -f environment.yml
+pipenv install --dev
 ```
 
 ## Exploration
