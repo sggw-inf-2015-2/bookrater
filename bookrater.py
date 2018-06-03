@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict
+from os import path
+from os.path import join as pj
 
 import graphene as gp
+
 import numpy as np
 import pandas as pd
+
 import torch
 import torch.nn.functional as F
+
+from flask import Flask
+from flask_graphql import GraphQLView
+
 from torch import nn
 from torch.autograd import Variable
-from flask_graphql import GraphQLView
-from flask import Flask
+
+from fastai.column_data import *
+from fastai.learner import *
 
 
-class GetRatings(gp.ObjectType):
+class Query(gp.ObjectType):
 
     predicted_ratings = gp.Field(
         gp.List(gp.Float),
@@ -21,6 +30,11 @@ class GetRatings(gp.ObjectType):
         books=gp.NonNull(gp.List(gp.Int)))
 
     def resolve_predicted_ratings(self, info, users, books):
+
+        N_FACTORS = 50
+        model = EmbeddingDot(len(users), len(books), N_FACTORS)
+        model.load_state_dict(torch.load('bookweb-embed-dot.pth'))
+
         data_in = pd.DataFrame.from_dict(
             OrderedDict([('userID', users), ('bookID', books)]))
 
@@ -28,6 +42,58 @@ class GetRatings(gp.ObjectType):
         data_var = Variable(data_tsr, volatile=True)
 
         return model(data_var, None).data.numpy().tolist()
+
+
+class Retrain(gp.Mutation):
+    class Arguments:
+        users = gp.NonNull(gp.List(gp.Int))
+        books = gp.NonNull(gp.List(gp.Int))
+        ratings = gp.NonNull(gp.List(gp.Int))
+
+    ok = gp.Boolean()
+
+    def mutate(self, info, users, books, ratings):
+
+        data = pd.DataFrame(
+            (users, books, ratings), columns=('userID', 'bookID', 'rating'))
+
+        u_uniq = ratings.userID.unique()
+        user2idx = {o: i for i, o in enumerate(u_uniq)}
+        ratings.userID = ratings.userID.apply(lambda x: user2idx[x])
+
+        m_uniq = ratings.bookID.unique()
+        book2idx = {o: i for i, o in enumerate(m_uniq)}
+        ratings.bookID = ratings.bookID.apply(lambda x: book2idx[x])
+
+        n_users = int(ratings.userID.nunique())
+        n_books = int(ratings.bookID.nunique())
+
+        X = ratings.drop(['rating'], axis=1)
+        y = ratings['rating'].astype(np.float32)
+
+        val_idxs = get_cv_idxs(len(ratings))
+
+
+        model_data = ColumnarModelData.from_data_frame(
+            path, val_idxs, X, y, ['userID', 'bookID'], 64)
+
+        N_FACTORS = 50
+        WD = 1e-5
+        model = EmbeddingDot(n_users, n_books, N_FACTORS)
+        opt = optim.SGD(
+            model.parameters(), 1e-1, weight_decay=WD, momentum=0.9)
+
+        fit(model, model_data, 20, opt, F.mse_loss)
+        set_lrs(opt, 0.01)
+        fit(model, model_data, 20, opt, F.mse_loss)
+
+        model.save_state_dict('bookweb-embed-dot.pth')
+        ok = True
+        return Retrain(ok=ok)
+
+
+class Mutations(gp.ObjectType):
+    retrain = Retrain.Field()
 
 
 class EmbeddingDot(nn.Module):
@@ -46,14 +112,7 @@ class EmbeddingDot(nn.Module):
         return (u * b).sum(1)
 
 
-n_users = 100
-n_books = 360
-
-N_FACTORS = 50
-model = EmbeddingDot(n_users, n_books, N_FACTORS)
-model.load_state_dict(torch.load('bookweb-embed-dot.model'))
-
-schema = gp.Schema(query=GetRatings)
+schema = gp.Schema(query=Query, mutation=Mutations)
 
 app = Flask(__name__)
 app.add_url_rule(
