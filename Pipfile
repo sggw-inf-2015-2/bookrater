@@ -4,12 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"fa29c1a" = {file = "http://download.pytorch.org/whl/cpu/torch-0.4.0-cp36-cp36m-linux_x86_64.whl"}
 flask = "*"
 graphene = "*"
 numpy = "*"
 pandas = "*"
 flask-graphql = "*"
+fastai = "*"
+torch = {file = "http://download.pytorch.org/whl/cpu/torch-0.4.0-cp36-cp36m-linux_x86_64.whl"}
 
 [dev-packages]
 pylint = "*"
