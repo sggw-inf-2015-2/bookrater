@@ -114,7 +114,10 @@ class EmbeddingDot(nn.Module):
 
 schema = gp.Schema(query=Query, mutation=Mutations)
 
-app = Flask(__name__)
-app.add_url_rule(
-    '/graphql',
+application = Flask(__name__)
+application.add_url_rule(
+    '/', 'index',
     view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True))
+
+if __name__ == "__main__":
+    application.run()
