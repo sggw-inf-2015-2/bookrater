@@ -39,7 +39,7 @@ class Query(gp.ObjectType):
         data_in = pd.DataFrame.from_dict(
             OrderedDict([('userID', users), ('bookID', books)]))
 
-        data_tsr = torch.LongTensor(data_in.as_matrix())
+        data_tsr = torch.LongTensor(data_in.values)
         data_var = Variable(data_tsr, volatile=True)
 
         return model(data_var, None).data.numpy().tolist()
