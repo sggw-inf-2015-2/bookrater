@@ -25,6 +25,8 @@ class Query(gp.ObjectType):
         books=gp.NonNull(gp.List(gp.Int)))
 
     def resolve_predicted_ratings(self, info, users, books):
+        if len(set([len(users), len(books)])) != 1:
+            return []
 
         with open('model-params.conf', 'r') as conf_file:
             n_users = int(conf_file.readline().strip())
@@ -52,6 +54,10 @@ class Retrain(gp.Mutation):
     ok = gp.Boolean()
 
     def mutate(self, info, users, books, ratings):
+        if len(set([len(users), len(books), len(ratings)])) != 1:
+            return Retrain(ok=False)
+        if len(users) < 10:
+            return Retrain(ok=False)
 
         data = pd.DataFrame.from_dict({'userID': users, 'bookID': books, 'rating': ratings})
 
@@ -87,8 +93,7 @@ class Retrain(gp.Mutation):
         with open('model-params.conf', 'w') as conf_file:
             conf_file.write(f'{n_users}\n{n_books}\n')
 
-        ok = True
-        return Retrain(ok=ok)
+        return Retrain(ok=True)
 
 
 class Mutations(gp.ObjectType):
