@@ -53,8 +53,7 @@ class Retrain(gp.Mutation):
 
     def mutate(self, info, users, books, ratings):
 
-        data = pd.DataFrame(
-            (users, books, ratings), columns=('userID', 'bookID', 'rating'))
+        data = pd.DataFrame.from_dict({'userID': users, 'bookID': books, 'rating': ratings})
 
         u_uniq = data.userID.unique()
         user2idx = {o: i for i, o in enumerate(u_uniq)}
@@ -84,7 +83,7 @@ class Retrain(gp.Mutation):
         set_lrs(opt, 0.01)
         fit(model, model_data, 20, opt, F.mse_loss)
 
-        model.save_state_dict('bookweb-embed-dot.pth')
+        torch.save(model.state_dict(), 'bookweb-embed-dot.pth')
         with open('model-params.conf', 'w') as conf_file:
             conf_file.write(f'{n_users}\n{n_books}\n')
 
